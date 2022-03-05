@@ -115,6 +115,17 @@ fn shrink(r : & Rect,s : Spot) -> Option<Spot> {
     }
 }
 
+fn isCorner (s : Spot) -> bool {
+    let px = s.0.0;
+    let py = s.0.1;
+    let sx = s.1.0;
+    let sy = s.1.1;
+    return isEdge(sx) || isEdge(sy) || isEdge(sx+px) || isEdge (sx+py);
+}
+
+fn isEdge (s : Coord) -> bool {
+    return s == 0 || s == 32;
+}
 
 
 fn solve(sizes : Vec<Size>) -> Option<Grid> {
@@ -123,10 +134,10 @@ fn solve(sizes : Vec<Size>) -> Option<Grid> {
     for size in sizes {
         shaped_sizes.push(shape_size(size));
     }
-    return solve_rec(&shaped_sizes,&initial_grid,1);
+    return solve_rec(&shaped_sizes,&mut vec![],&initial_grid,1);
 }
 
-fn solve_rec(sizes : & Vec<ShapedSize>,g : & Grid,depth : u16) -> Option<Grid> {
+fn solve_rec(sizes : & Vec<ShapedSize>,cant_be_corner : &mut Vec <Size> ,g : & Grid,depth : u16) -> Option<Grid> {
     if g.spots.len() == 0 {
         return None;
     }
@@ -136,7 +147,10 @@ fn solve_rec(sizes : & Vec<ShapedSize>,g : & Grid,depth : u16) -> Option<Grid> {
     for (ind,shaped_size) in sizes.iter().enumerate() {
         for shape in &*shaped_size.1  {
             // diagonal reflection symetry
-            if (depth > 1 || shape.0 >= shape.1 ) && fits_in(*shape,space) {
+            if (depth > 1 || shape.0 >= shape.1 )
+                && fits_in(*shape,space)
+                && !(isCorner(Spot(pos,*shape)))
+            {
                 let rect = Rect(pos,*shape);
                 let g2 = g.clone();
                 let g3 = insert(&rect,g2);
@@ -147,12 +161,15 @@ fn solve_rec(sizes : & Vec<ShapedSize>,g : & Grid,depth : u16) -> Option<Grid> {
                 } else {
                     //println!("Trace:\nsizes: {:?}\ngrid:{:?}",sizes2,g3);
                     //println!("trace: {:?}",sizes2.len());
-                    match solve_rec(&sizes2,&g3,depth+1) {
+                    match solve_rec(&sizes2,cant_be_corner,&g3,depth+1) {
                         Some(solution) => return Some(solution) ,
                         None => {},
                     }
                 }
             }
+        }
+        if depth == 1 {
+            cant_be_corner.push(shaped_size.0);
         }
     }
     return None;
