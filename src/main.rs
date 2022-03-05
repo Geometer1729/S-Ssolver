@@ -13,6 +13,8 @@ struct Shape(Coord,Coord);
 struct Rect(Pos,Shape);
 #[derive(Copy,Clone,Debug)]
 struct Spot(Pos,Shape);
+type ShapedSize = (Size,Box<Vec<Shape>>);
+
 
 #[derive(Clone,Debug)]
 struct Grid{
@@ -24,10 +26,14 @@ fn fits_in(l : Shape, r : Shape) -> bool {
     return l.0 <= r.0 && l.1 <= r.1;
 }
 
+fn shape_size(s:Size) -> ShapedSize {
+    return (s,Box::new(gen_shapes(s)));
+}
+
 fn gen_shapes(size : Size) -> Vec<Shape> {
     let mut v = vec![];
-    for i in 1..32 {
-        if size % i == 0 {
+    for i in 1..33 { // .. is half open [)
+        if size % i == 0 && size/i <= 32 {
             v.push(Shape(i,size/i));
         }
     };
@@ -113,20 +119,25 @@ fn shrink(r : & Rect,s : Spot) -> Option<Spot> {
 
 fn solve(sizes : Vec<Size>) -> Option<Grid> {
     let initial_grid = Grid{rects : vec![] ,spots : vec![Spot(Pos(0,0),Shape(32,32))] };
-    return solve_rec(&sizes,&initial_grid);
+    let mut shaped_sizes = vec![];
+    for size in sizes {
+        shaped_sizes.push(shape_size(size));
+    }
+    return solve_rec(&shaped_sizes,&initial_grid,1);
 }
 
-fn solve_rec(sizes : & Vec<Size>,g : & Grid) -> Option<Grid> {
+fn solve_rec(sizes : & Vec<ShapedSize>,g : & Grid,depth : u16) -> Option<Grid> {
     if g.spots.len() == 0 {
         return None;
     }
     let spot = g.spots[0];
     let pos = spot.0;
     let space = spot.1;
-    for (ind,size) in sizes.iter().enumerate() {
-        for shape in gen_shapes(*size) {
-            if fits_in(shape,space) {
-                let rect = Rect(pos,shape);
+    for (ind,shaped_size) in sizes.iter().enumerate() {
+        for shape in &*shaped_size.1  {
+            // diagonal reflection symetry
+            if (depth > 1 || shape.0 >= shape.1 ) && fits_in(*shape,space) {
+                let rect = Rect(pos,*shape);
                 let g2 = g.clone();
                 let g3 = insert(&rect,g2);
                 let mut sizes2 = sizes.clone();
@@ -136,7 +147,7 @@ fn solve_rec(sizes : & Vec<Size>,g : & Grid) -> Option<Grid> {
                 } else {
                     //println!("Trace:\nsizes: {:?}\ngrid:{:?}",sizes2,g3);
                     //println!("trace: {:?}",sizes2.len());
-                    match solve_rec(&sizes2,&g3) {
+                    match solve_rec(&sizes2,&g3,depth+1) {
                         Some(solution) => return Some(solution) ,
                         None => {},
                     }
@@ -158,6 +169,7 @@ fn main() {
 
     match solve(sizes.unwrap()) {
         Some(g) => println!("{:?}",g),
-        None => println!("cringe!"),
+        None => println!("No solution"),
     }
+    //println!("{:?}",gen_shapes(1024));
 }
