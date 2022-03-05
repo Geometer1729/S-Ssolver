@@ -115,15 +115,15 @@ fn shrink(r : & Rect,s : Spot) -> Option<Spot> {
     }
 }
 
-fn isCorner (s : Spot) -> bool {
+fn is_corner (s : Spot) -> bool {
     let px = s.0.0;
     let py = s.0.1;
     let sx = s.1.0;
     let sy = s.1.1;
-    return isEdge(sx) || isEdge(sy) || isEdge(sx+px) || isEdge (sx+py);
+    return is_edge(sx) || is_edge(sy) || is_edge(sx+px) || is_edge (sx+py);
 }
 
-fn isEdge (s : Coord) -> bool {
+fn is_edge (s : Coord) -> bool {
     return s == 0 || s == 32;
 }
 
@@ -149,7 +149,7 @@ fn solve_rec(sizes : & Vec<ShapedSize>,cant_be_corner : &mut Vec <Size> ,g : & G
             // diagonal reflection symetry
             if (depth > 1 || shape.0 >= shape.1 )
                 && fits_in(*shape,space)
-                && !(isCorner(Spot(pos,*shape)))
+                && !(is_corner(Spot(pos,*shape)))
             {
                 let rect = Rect(pos,*shape);
                 let g2 = g.clone();
@@ -159,8 +159,6 @@ fn solve_rec(sizes : & Vec<ShapedSize>,cant_be_corner : &mut Vec <Size> ,g : & G
                 if sizes2.len() == 0 {
                     return Some(g3);
                 } else {
-                    //println!("Trace:\nsizes: {:?}\ngrid:{:?}",sizes2,g3);
-                    //println!("trace: {:?}",sizes2.len());
                     match solve_rec(&sizes2,cant_be_corner,&g3,depth+1) {
                         Some(solution) => return Some(solution) ,
                         None => {},
@@ -170,6 +168,9 @@ fn solve_rec(sizes : & Vec<ShapedSize>,cant_be_corner : &mut Vec <Size> ,g : & G
         }
         if depth == 1 {
             cant_be_corner.push(shaped_size.0);
+            if sizes.len() - cant_be_corner.len() < 4 {
+                return None;
+            }
         }
     }
     return None;
