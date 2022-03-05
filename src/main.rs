@@ -115,19 +115,6 @@ fn shrink(r : & Rect,s : Spot) -> Option<Spot> {
     }
 }
 
-fn is_corner (s : Spot) -> bool {
-    let px = s.0.0;
-    let py = s.0.1;
-    let sx = s.1.0;
-    let sy = s.1.1;
-    return is_edge(sx) || is_edge(sy) || is_edge(sx+px) || is_edge (sx+py);
-}
-
-fn is_edge (s : Coord) -> bool {
-    return s == 0 || s == 32;
-}
-
-
 fn solve(sizes : Vec<Size>) -> Option<Grid> {
     let initial_grid = Grid{rects : vec![] ,spots : vec![Spot(Pos(0,0),Shape(32,32))] };
     let mut shaped_sizes = vec![];
@@ -149,7 +136,6 @@ fn solve_rec(sizes : & Vec<ShapedSize>,cant_be_corner : &mut Vec <Size> ,g : & G
             // diagonal reflection symetry
             if (depth > 1 || shape.0 >= shape.1 )
                 && fits_in(*shape,space)
-                && !(is_corner(Spot(pos,*shape)))
             {
                 let rect = Rect(pos,*shape);
                 let g2 = g.clone();
